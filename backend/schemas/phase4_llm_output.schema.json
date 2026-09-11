@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Phase4LLMOutputSchema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "response_type",
+    "message",
+    "decision_acknowledgement",
+    "evidence",
+    "next_step",
+    "safety"
+  ],
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "response_type": {
+      "type": "string",
+      "enum": [
+        "SUPPORT_GUIDANCE",
+        "RECOMMENDATION_EXPLANATION",
+        "FRAUD_VERIFICATION",
+        "FINANCIAL_GUIDANCE",
+        "FALLBACK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "decision_acknowledgement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "action"],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": ["RECOMMEND", "SUPPORT", "VERIFY", "NO_RECOMMENDATION"]
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "RECOMMEND",
+            "SUPPORT",
+            "VERIFY_SUSPICIOUS_TRANSACTION",
+            "REVIEW_UPCOMING_PAYMENTS",
+            "NO_RECOMMENDATION"
+          ]
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metric", "value"],
+        "properties": {
+          "metric": {
+            "type": "string",
+            "enum": [
+              "income",
+              "monthly_spending",
+              "current_emi",
+              "emi_ratio",
+              "net_monthly_surplus",
+              "spending_trend",
+              "spending_change_pct",
+              "savings_trend",
+              "financial_stress_score",
+              "payment_risk_score",
+              "fraud_score",
+              "behaviour_change_score"
+            ]
+          },
+          "value": {
+            "type": ["number", "string"]
+          }
+        }
+      }
+    },
+    "next_step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "label"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["NONE", "ACTION", "INFORMATION", "VERIFY"]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["financial_decision_made_by", "llm_role"],
+      "properties": {
+        "financial_decision_made_by": {
+          "type": "string",
+          "const": "DETERMINISTIC_ENGINE"
+        },
+        "llm_role": {
+          "type": "string",
+          "const": "EXPLANATION_ONLY"
+        }
+      }
+    }
+  }
+}

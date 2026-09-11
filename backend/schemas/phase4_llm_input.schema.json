@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Phase4LLMInputSchema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "customer",
+    "user_message",
+    "financial_context",
+    "guardian_context",
+    "decision_context",
+    "conversation_context"
+  ],
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "customer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "preferred_language"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "preferred_language": {
+          "type": "string",
+          "enum": ["English"]
+        }
+      }
+    },
+    "user_message": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "financial_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "income",
+        "monthly_spending",
+        "current_emi",
+        "emi_ratio",
+        "net_monthly_surplus",
+        "spending_trend",
+        "spending_change_pct",
+        "savings_trend"
+      ],
+      "properties": {
+        "income": {
+          "type": "number",
+          "minimum": 0
+        },
+        "monthly_spending": {
+          "type": "number",
+          "minimum": 0
+        },
+        "current_emi": {
+          "type": "number",
+          "minimum": 0
+        },
+        "emi_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "net_monthly_surplus": {
+          "type": "number"
+        },
+        "spending_trend": {
+          "type": "string",
+          "enum": ["INCREASING", "DECREASING", "STABLE"]
+        },
+        "spending_change_pct": {
+          "type": "number",
+          "minimum": -100
+        },
+        "savings_trend": {
+          "type": "string",
+          "enum": ["INCREASING", "DECLINING", "STABLE"]
+        }
+      }
+    },
+    "guardian_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "primary_classification", "scores"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["NO_ACTION", "ATTENTION_NEEDED", "URGENT_ACTION"]
+        },
+        "primary_classification": {
+          "type": "string",
+          "enum": [
+            "HEALTHY_FINANCIAL_TREND",
+            "NO_CONCERN",
+            "BEHAVIOUR_CHANGE",
+            "PAYMENT_RISK",
+            "FINANCIAL_STRESS",
+            "FRAUD_SUSPECTED"
+          ]
+        },
+        "scores": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "financial_stress_score",
+            "payment_risk_score",
+            "fraud_score",
+            "behaviour_change_score"
+          ],
+          "properties": {
+            "financial_stress_score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "payment_risk_score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "fraud_score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "behaviour_change_score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        }
+      }
+    },
+    "decision_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "recommendation", "policy_reasons"],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": ["RECOMMEND", "SUPPORT", "VERIFY", "NO_RECOMMENDATION"]
+        },
+        "recommendation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "product_category",
+            "product_name",
+            "supportive_guidance",
+            "suitability_rationale"
+          ],
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "RECOMMEND",
+                "SUPPORT",
+                "VERIFY",
+                "NO_RECOMMENDATION",
+                "REVIEW_UPCOMING_PAYMENTS",
+                "VERIFY_SUSPICIOUS_TRANSACTION"
+              ]
+            },
+            "product_category": {
+              "type": ["string", "null"],
+              "enum": [
+                null,
+                "savings",
+                "investment/SIP",
+                "insurance",
+                "loan/credit",
+                "credit_card"
+              ]
+            },
+            "product_name": {
+              "type": ["string", "null"]
+            },
+            "supportive_guidance": {
+              "type": ["object", "null"]
+            },
+            "suitability_rationale": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            }
+          }
+        },
+        "policy_reasons": {
+          "type": "array"
+        }
+      }
+    },
+    "conversation_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["previous_messages", "language"],
+      "properties": {
+        "previous_messages": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["role", "content"],
+            "properties": {
+              "role": {
+                "type": "string",
+                "enum": ["user", "assistant"]
+              },
+              "content": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              }
+            }
+          }
+        },
+        "language": {
+          "type": "string",
+          "enum": ["English"]
+        }
+      }
+    }
+  }
+}

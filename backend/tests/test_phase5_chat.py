@@ -385,3 +385,21 @@ def test_chat_endpoint_ignores_client_injected_metrics(test_client):
     # Must strictly be Rahul's real backend decision (SUPPORT)
     assert data["decision_acknowledgement"]["decision"] == "SUPPORT"
     assert data["decision_acknowledgement"]["action"] == "REVIEW_UPCOMING_PAYMENTS"
+
+
+def test_chat_endpoint_rejects_oversized_message_without_calling_openai(test_client):
+    """A 4001-character message returns HTTP 400 and the OpenAI client/explanation function is never called."""
+    oversized_message = "M" * 4001
+    with patch("backend.integrations.openai_client.generate_explanation") as mock_openai, \
+         patch("backend.services.chat_service.generate_explanation") as mock_service_openai, \
+         patch("backend.routes.chat_routes.process_chat") as mock_route_process:
+        resp = test_client.post(
+            "/api/chat",
+            json={"customer_id": 1, "message": oversized_message}
+        )
+        assert resp.status_code == 400
+        assert "4000" in resp.get_json().get("error", "")
+        assert mock_route_process.call_count == 0
+        assert mock_openai.call_count == 0
+        assert mock_service_openai.call_count == 0
+

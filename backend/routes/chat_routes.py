@@ -45,6 +45,9 @@ def chat():
     if user_message is None or not isinstance(user_message, str) or not user_message.strip():
         return jsonify({"error": "Field 'message' is required and must be a non-empty string"}), 400
 
+    if len(user_message) > 4000:
+        return jsonify({"error": "Field 'message' cannot exceed 4000 characters"}), 400
+
     # Execute safe explanation pipeline
     result = process_chat(customer_id, user_message.strip())
     if result is None:

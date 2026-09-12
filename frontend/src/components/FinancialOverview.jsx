@@ -16,7 +16,7 @@ export function FinancialOverview({ profile, loading, error }) {
       <div className="card">
         <div className="loading-indicator">
           <div className="spinner" />
-          <span>Loading financial profile...</span>
+          <span>Loading financial profile metrics...</span>
         </div>
       </div>
     );
@@ -44,10 +44,12 @@ export function FinancialOverview({ profile, loading, error }) {
   };
 
   const getTrendColor = (trend, isExpense = false) => {
-    if (trend === 'INCREASING') return isExpense ? '#dc2626' : '#16a34a';
-    if (trend === 'DECLINING' || trend === 'DECREASING') return isExpense ? '#16a34a' : '#dc2626';
+    if (trend === 'INCREASING') return isExpense ? 'var(--accent-orange)' : 'var(--accent-green)';
+    if (trend === 'DECLINING' || trend === 'DECREASING') return isExpense ? 'var(--accent-green)' : 'var(--accent-orange)';
     return 'var(--text-muted)';
   };
+
+  const isNegativeSavings = typeof profile.estimated_savings === 'number' && profile.estimated_savings < 0;
 
   return (
     <section className="card" aria-labelledby="financial-overview-title">
@@ -86,9 +88,9 @@ export function FinancialOverview({ profile, loading, error }) {
         </div>
 
         {/* Estimated Savings */}
-        <div className="metric-card">
+        <div className="metric-card" style={isNegativeSavings ? { borderColor: 'rgba(255, 104, 104, 0.4)', background: 'rgba(255, 104, 104, 0.05)' } : {}}>
           <span className="metric-label">Estimated Savings</span>
-          <span className="metric-value" style={{ color: profile.estimated_savings < 0 ? '#dc2626' : 'inherit' }}>
+          <span className="metric-value" style={{ color: isNegativeSavings ? 'var(--accent-red)' : 'var(--text-primary)' }}>
             {formatCurrency(profile.estimated_savings)}
           </span>
           <span className="metric-sub" style={{ color: getTrendColor(profile.savings_trend, false) }}>
@@ -112,7 +114,7 @@ export function FinancialOverview({ profile, loading, error }) {
           <span className="metric-value">
             {profile.emi_ratio !== undefined ? `${profile.emi_ratio.toFixed(1)}%` : '—'}
           </span>
-          <span className="metric-sub" style={{ color: profile.emi_ratio > 35 ? '#dc2626' : '#16a34a' }}>
+          <span className="metric-sub" style={{ color: profile.emi_ratio > 35 ? 'var(--accent-red)' : 'var(--accent-green)' }}>
             {profile.emi_ratio > 35 ? 'Above 35% threshold' : 'Within safe debt ceiling'}
           </span>
         </div>
@@ -120,11 +122,11 @@ export function FinancialOverview({ profile, loading, error }) {
         {/* Expense Breakdown */}
         <div className="metric-card">
           <span className="metric-label">Fixed vs Discretionary</span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.25rem' }}>
-            <span style={{ fontSize: '0.8125rem', fontWeight: 600 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.25rem' }}>
+            <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               Fixed: {formatCurrency(profile.fixed_expenses)}
             </span>
-            <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-muted)' }}>
               Discretionary: {formatCurrency(profile.discretionary_spending)}
             </span>
           </div>

@@ -4,6 +4,7 @@ import { FinancialOverview } from './components/FinancialOverview';
 import { GuardianSection } from './components/GuardianSection';
 import { DecisionCard } from './components/DecisionCard';
 import { ChatPanel } from './components/ChatPanel';
+import { ShieldIcon } from './components/Icons';
 import {
   fetchCustomers,
   fetchProfile,
@@ -135,30 +136,31 @@ export function App() {
       />
 
       {customersError && (
-        <div className="error-banner" style={{ marginBottom: '1.5rem' }}>
+        <div className="error-banner" style={{ marginBottom: '1.75rem' }}>
           <span>Error loading customers: {customersError}</span>
         </div>
       )}
 
       <main className="dashboard-grid">
-        <div className="dashboard-main-columns">
-          {/* Left Column: Decision, Guardian, and Financial Overview */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-            {/* 1. Decision & Recommendation Card */}
-            <DecisionCard
-              recommendationData={recommendation}
-              loading={recommendationLoading}
-              error={recommendationError}
-            />
+        {/* Top Hero Section: The Decision & Recommendation Engine Card */}
+        <DecisionCard
+          recommendationData={recommendation}
+          loading={recommendationLoading}
+          error={recommendationError}
+        />
 
-            {/* 2. Guardian Protection Section */}
+        {/* 2-Column Responsive Layout */}
+        <div className="dashboard-main-columns">
+          {/* Left Column: Guardian Protection Layer & Financial Overview */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {/* Financial Guardian Intelligence Layer */}
             <GuardianSection
               guardian={guardian}
               loading={guardianLoading}
               error={guardianError}
             />
 
-            {/* 3. Financial Overview Metrics */}
+            {/* Deterministic Financial Overview */}
             <FinancialOverview
               profile={profile}
               loading={profileLoading}
@@ -166,7 +168,7 @@ export function App() {
             />
           </div>
 
-          {/* Right Column: Conversational AI Explanation Layer */}
+          {/* Right Column: Conversational AI Explanation Assistant */}
           <div>
             <ChatPanel
               key={selectedCustomerId} // Reset conversation when customer changes
@@ -178,12 +180,16 @@ export function App() {
       </main>
 
       <footer className="safety-footer">
+        <div className="safety-badge">
+          <ShieldIcon className="w-3.5 h-3.5" style={{ color: 'var(--accent-green)' }} />
+          <span>Responsible AI Banking Architecture</span>
+        </div>
         <p>
-          <strong>NeoBharat Architecture:</strong> Deterministic engines calculate & decide (Phase 1–3) ·
-          Safety gate validates semantics (Phase 4) · OpenAI explains (Phase 5) · Frontend displays (Phase 6).
+          <strong>NeoBharat:</strong> Deterministic engines calculate & decide (Phase 1–3) •
+          Safety gate validates semantics (Phase 4) • OpenAI explains (Phase 5) • Frontend displays (Phase 6).
         </p>
-        <p style={{ marginTop: '0.25rem', opacity: 0.8 }}>
-          Zero client-side financial calculations · No API keys in browser.
+        <p style={{ marginTop: '0.35rem', color: 'var(--text-dim)' }}>
+          Zero client-side financial calculations • No OpenAI API keys in browser • All decisions made server-side.
         </p>
       </footer>
     </div>

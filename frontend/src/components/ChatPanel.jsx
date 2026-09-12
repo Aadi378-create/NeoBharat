@@ -60,7 +60,6 @@ export function ChatPanel({ customerId, customerName }) {
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err) {
       setError(err.message || 'Failed to receive explanation from server.');
-      // Append error message to chat
       setMessages((prev) => [
         ...prev,
         {
@@ -76,20 +75,20 @@ export function ChatPanel({ customerId, customerName }) {
 
   return (
     <div className="card chat-card" aria-label="Ask NeoBharat Chat Panel">
-      <div className="card-header" style={{ marginBottom: '0.75rem' }}>
+      <div className="card-header">
         <div className="card-title-group">
-          <div className="brand-icon" style={{ width: 32, height: 32, background: '#0284c7' }}>
-            <SparklesIcon className="w-4 h-4" />
+          <div className="brand-icon" style={{ width: 36, height: 36, background: 'var(--gradient-brand)' }}>
+            <SparklesIcon className="w-4 h-4" style={{ color: '#070D1B' }} />
           </div>
           <div>
-            <h2 className="card-title" style={{ fontSize: '1rem' }}>Ask NeoBharat</h2>
+            <h2 className="card-title" style={{ fontSize: '1.0625rem' }}>Ask NeoBharat</h2>
             <p className="card-subtitle" style={{ fontSize: '0.75rem' }}>
               Conversational explanation layer powered by OpenAI
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
-          <ShieldIcon className="w-3.5 h-3.5" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.6875rem', color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.05)', padding: '0.25rem 0.5rem', borderRadius: 'var(--radius-sm)' }}>
+          <ShieldIcon className="w-3.5 h-3.5" style={{ color: 'var(--accent-green)' }} />
           <span>LLM Explains · Engine Decides</span>
         </div>
       </div>
@@ -99,12 +98,12 @@ export function ChatPanel({ customerId, customerName }) {
         {messages.map((m, idx) => (
           <div key={idx} className={`message-bubble ${m.role} ${m.isError ? 'error-bubble' : ''}`}>
             {m.responseType && (
-              <div style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', opacity: 0.8, marginBottom: '0.25rem' }}>
+              <div style={{ fontSize: '0.6875rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: m.role === 'user' ? 'var(--accent-orange)' : 'var(--accent-green)', marginBottom: '0.3rem' }}>
                 {m.responseType.replace(/_/g, ' ')}
               </div>
             )}
 
-            <div>{m.content}</div>
+            <div style={{ color: '#FFFFFF' }}>{m.content}</div>
 
             {/* Next Step if present */}
             {m.nextStep && (
@@ -126,7 +125,7 @@ export function ChatPanel({ customerId, customerName }) {
 
             {/* Safety metadata tag */}
             {m.safety && (
-              <div style={{ fontSize: '0.625rem', opacity: 0.6, marginTop: '0.375rem', fontStyle: 'italic' }}>
+              <div style={{ fontSize: '0.625rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontStyle: 'italic', opacity: 0.75 }}>
                 Decision: {m.safety.financial_decision_made_by} · Role: {m.safety.llm_role}
               </div>
             )}

@@ -15,6 +15,8 @@ from typing import Any, Dict, Optional
 
 from backend.domain.decision_engine import evaluate_decision
 from backend.domain.financial_metrics import calculate_financial_profile
+from backend.domain.conversation_fallbacks import generate_conversational_fallback
+from backend.domain.conversation_intents import detect_intent
 from backend.domain.phase4_validator import (
     generate_deterministic_fallback,
     validate_input_schema,
@@ -26,6 +28,10 @@ from backend.integrations.openai_client import generate_explanation
 from backend.repositories.customer_repository import get_customer_by_id
 from backend.repositories.transaction_repository import (
     get_all_transactions_for_customer_ordered,
+)
+from backend.services.conversation_context import (
+    get_conversation_context,
+    update_conversation_context,
 )
 from backend.services.guardian_service import evaluate_guardian
 
@@ -132,10 +138,11 @@ def process_chat(
 ) -> Optional[Dict[str, Any]]:
     """Process an incoming user chat message through the explanation pipeline.
 
-    1. Retrieves authoritative context.
-    2. Calls OpenAI for conversational explanation.
-    3. Validates output schema and semantics.
-    4. Returns safe explanation or deterministic fallback.
+    1. Retrieves conversational context and detects user intent/language.
+    2. Builds authoritative deterministic context from Phase 1-3 engines.
+    3. Calls OpenAI for conversational explanation with intent guidance.
+    4. Validates output schema and semantics.
+    5. Returns safe explanation or deterministic fallback, updating context.
 
     Args:
         customer_id: Customer ID.
@@ -146,12 +153,19 @@ def process_chat(
     Returns:
         Optional[Dict[str, Any]]: Validated Phase 4 output dictionary, or None if customer not found.
     """
+    # 1. Retrieve lightweight conversation context for customer
+    conv_ctx = get_conversation_context(customer_id)
+
+    # 2. Detect intent, language, and response strategy
+    intent_res = detect_intent(user_message, conversation_context=conv_ctx)
+
+    # 3. Build authoritative context from Phase 1-3 deterministic backend
     input_payload = build_llm_input(customer_id, user_message, reference_month)
     if not input_payload:
         return None
 
-    # Call OpenAI explanation layer
-    raw_response = generate_explanation(input_payload, client=openai_client)
+    # 4. Call OpenAI explanation layer with intent context
+    raw_response = generate_explanation(input_payload, client=openai_client, intent_obj=intent_res)
 
     if raw_response is not None:
         # Step 1: Validate output schema
@@ -161,6 +175,14 @@ def process_chat(
             semantic_valid = validate_semantic_output(raw_response, input_payload)
             if semantic_valid:
                 logger.info("OpenAI explanation passed all schema and semantic validations.")
+                update_conversation_context(
+                    customer_id=customer_id,
+                    intent=intent_res["intent"],
+                    language=intent_res["language"],
+                    response_type=raw_response.get("response_type", "SUPPORT_GUIDANCE"),
+                    decision=raw_response.get("decision_acknowledgement", {}).get("decision", "SUPPORT"),
+                    topic=intent_res.get("topic", "GENERAL"),
+                )
                 return raw_response
             else:
                 logger.warning("OpenAI explanation failed semantic safety validation. Engaging fallback.")
@@ -169,5 +191,14 @@ def process_chat(
     else:
         logger.info("No response from OpenAI (unavailable, timeout, or error). Engaging fallback.")
 
-    # In all failure cases, return the deterministic fallback
-    return generate_deterministic_fallback(input_payload)
+    # 5. In all failure cases, return the deterministic conversational fallback
+    fallback = generate_conversational_fallback(input_payload, intent_res)
+    update_conversation_context(
+        customer_id=customer_id,
+        intent=intent_res["intent"],
+        language=intent_res["language"],
+        response_type=fallback.get("response_type", "SUPPORT_GUIDANCE"),
+        decision=fallback.get("decision_acknowledgement", {}).get("decision", "SUPPORT"),
+        topic=intent_res.get("topic", "GENERAL"),
+    )
+    return fallback

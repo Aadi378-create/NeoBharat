@@ -28,7 +28,7 @@ export function GuardianSection({ guardian, loading, error }) {
     return null;
   }
 
-  const { status, classification, scores = {}, explanation = {} } = guardian;
+  const { status, classification, scores = {}, explanation = {}, recommended_intervention = {} } = guardian;
 
   const getStatusBadge = () => {
     switch (status) {
@@ -71,11 +71,11 @@ export function GuardianSection({ guardian, loading, error }) {
     <section className={`card guardian-hero ${getHeroClass()}`} aria-labelledby="guardian-section-title">
       <div className="card-header">
         <div className="card-title-group">
-          <div className="brand-icon" style={{ width: 36, height: 36, background: '#0f172a' }}>
-            <ShieldIcon className="w-5 h-5" />
+          <div className="brand-icon" style={{ width: 40, height: 40, background: 'rgba(2, 132, 199, 0.2)', border: '1px solid rgba(82, 151, 255, 0.4)' }}>
+            <ShieldIcon className="w-5 h-5" style={{ color: 'var(--accent-blue)' }} />
           </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexWrap: 'wrap' }}>
               <h2 id="guardian-section-title" className="card-title">Financial Guardian</h2>
               {getStatusBadge()}
             </div>
@@ -83,10 +83,10 @@ export function GuardianSection({ guardian, loading, error }) {
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-            Classification
+          <span style={{ fontSize: '0.6875rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>
+            Primary Classification
           </span>
-          <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+          <div style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#FFFFFF', marginTop: '0.125rem' }}>
             {primaryClassification.replace(/_/g, ' ')}
           </div>
         </div>
@@ -95,33 +95,55 @@ export function GuardianSection({ guardian, loading, error }) {
       {/* 4 Deterministic Guardian Scores */}
       <div className="guardian-scores-grid">
         <div className="score-card">
-          <div className="score-num" style={{ color: scores.financial_stress_score >= 60 ? '#dc2626' : '#0f172a' }}>
+          <div className="score-num" style={{ color: scores.financial_stress_score >= 60 ? 'var(--accent-orange)' : 'var(--text-primary)' }}>
             {scores.financial_stress_score ?? '—'}
           </div>
           <div className="score-name">Financial Stress</div>
         </div>
 
         <div className="score-card">
-          <div className="score-num" style={{ color: scores.payment_risk_score >= 60 ? '#dc2626' : '#0f172a' }}>
+          <div className="score-num" style={{ color: scores.payment_risk_score >= 60 ? 'var(--accent-orange)' : 'var(--text-primary)' }}>
             {scores.payment_risk_score ?? '—'}
           </div>
           <div className="score-name">Payment Risk</div>
         </div>
 
         <div className="score-card">
-          <div className="score-num" style={{ color: scores.fraud_score >= 65 ? '#dc2626' : '#0f172a' }}>
+          <div className="score-num" style={{ color: scores.fraud_score >= 65 ? 'var(--accent-red)' : 'var(--text-primary)' }}>
             {scores.fraud_score ?? '—'}
           </div>
           <div className="score-name">Fraud / Anomaly</div>
         </div>
 
         <div className="score-card">
-          <div className="score-num" style={{ color: scores.behaviour_change_score >= 60 ? '#b45309' : '#0f172a' }}>
+          <div className="score-num" style={{ color: scores.behaviour_change_score >= 60 ? 'var(--accent-gold)' : 'var(--text-primary)' }}>
             {scores.behaviour_change_score ?? '—'}
           </div>
           <div className="score-name">Behaviour Shift</div>
         </div>
       </div>
+
+      {/* Recommended Intervention */}
+      {recommended_intervention?.action && recommended_intervention.action !== 'NONE' && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.625rem',
+          padding: '0.625rem 0.875rem',
+          background: 'rgba(16, 29, 51, 0.8)',
+          border: '1px solid var(--border-card)',
+          borderRadius: 'var(--radius-sm)',
+          margin: '0.75rem 0',
+          fontSize: '0.8125rem'
+        }}>
+          <span style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
+            Recommended Intervention:
+          </span>
+          <span style={{ fontWeight: 700, color: 'var(--accent-orange)' }}>
+            {recommended_intervention.action.replace(/_/g, ' ')}
+          </span>
+        </div>
+      )}
 
       {/* Guardian Explanation & Factors */}
       {explanation && (
@@ -137,7 +159,7 @@ export function GuardianSection({ guardian, loading, error }) {
                   key={idx}
                   className={`factor-tag ${f.impact === 'NEGATIVE' ? 'negative' : 'neutral'}`}
                 >
-                  <strong>{f.factor}:</strong> {f.value}
+                  <strong style={{ color: '#FFFFFF' }}>{f.factor}:</strong> {f.value}
                 </span>
               ))}
             </div>

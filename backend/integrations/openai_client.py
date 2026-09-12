@@ -28,6 +28,8 @@ Strict Guidelines:
 8. Never override the safety metadata:
    "financial_decision_made_by": "DETERMINISTIC_ENGINE"
    "llm_role": "EXPLANATION_ONLY"
+9. Answer the user's specific intent directly, rather than providing a generic response.
+10. Respond in the requested language (English, Hindi in Devanagari script, or natural Hinglish in Latin script as detected).
 
 Your output must be a valid JSON object strictly conforming to the following structure:
 {
@@ -71,6 +73,7 @@ def generate_explanation(
     payload: Dict[str, Any],
     client: Optional[Any] = None,
     timeout: float = DEFAULT_TIMEOUT_SECONDS,
+    intent_obj: Optional[Dict[str, Any]] = None,
 ) -> Optional[Dict[str, Any]]:
     """Invoke the OpenAI API to generate an explanation for a pre-computed financial decision.
 
@@ -78,6 +81,7 @@ def generate_explanation(
         payload: Full Phase 4 LLM input payload.
         client: Optional pre-configured OpenAI client (useful for unit testing / mocking).
         timeout: Request timeout in seconds.
+        intent_obj: Optional Phase 7 intent detection result dictionary.
 
     Returns:
         Optional[Dict[str, Any]]: Parsed JSON dictionary from the model response,
@@ -97,11 +101,28 @@ def generate_explanation(
     model = get_configured_model()
 
     try:
-        user_prompt = (
-            f"Here is the authoritative financial and decision context:\n\n"
-            f"{json.dumps(payload, indent=2)}\n\n"
-            f"Please provide the structured explanation adhering strictly to the required schema."
-        )
+        prompt_lines = [
+            "Here is the authoritative financial and decision context:\n",
+            json.dumps(payload, indent=2),
+            "\n",
+        ]
+        if intent_obj:
+            intent = intent_obj.get("intent", "WHY_THIS_DECISION")
+            lang = intent_obj.get("language", "ENGLISH")
+            strat = intent_obj.get("response_strategy", "EXPLANATION")
+            prompt_lines.append(
+                f"Conversational Direction:\n"
+                f"- Detected User Intent: {intent}\n"
+                f"- User Language: {lang}\n"
+                f"- Response Strategy: {strat}\n"
+                f"- Instructions: Answer the user's specific intent directly and empathetically using the detected language "
+                f"({lang}: English, Hindi in Devanagari script, or natural Hinglish in Latin script as detected). "
+                f"Ground all statements strictly in the authoritative context above."
+            )
+        else:
+            prompt_lines.append("Please provide the structured explanation adhering strictly to the required schema.")
+
+        user_prompt = "\n".join(prompt_lines)
 
         response = client.chat.completions.create(
             model=model,

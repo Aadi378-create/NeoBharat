@@ -9,8 +9,10 @@ from flask import Flask, jsonify
 
 try:
     from backend.database.connection import init_db
+    from backend.routes.chat_routes import chat_bp
 except ImportError:
     from database.connection import init_db
+    from routes.chat_routes import chat_bp
 
 
 def create_app(test_config=None) -> Flask:
@@ -30,6 +32,9 @@ def create_app(test_config=None) -> Flask:
     # Initialize database tables if not already present
     db_path = app.config.get("DATABASE_PATH")
     init_db(db_path)
+
+    # Register API blueprints
+    app.register_blueprint(chat_bp)
 
     @app.route("/health", methods=["GET"])
     def health():

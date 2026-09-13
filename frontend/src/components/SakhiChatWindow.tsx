@@ -10,7 +10,8 @@ import {
   CheckCircle2,
   Sparkles,
   ShieldCheck,
-  ArrowRight
+  ArrowRight,
+  Square
 } from 'lucide-react';
 
 interface SakhiChatWindowProps {
@@ -35,6 +36,12 @@ export const SakhiChatWindow: React.FC<SakhiChatWindowProps> = ({
 
   const [inputVal, setInputVal] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const speechRecognitionRef = useRef<any>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   // Initial messages customized to active persona
   const initialMessages: ChatMessage[] = [
@@ -175,6 +182,166 @@ export const SakhiChatWindow: React.FC<SakhiChatWindowProps> = ({
       };
       setMessages((prev) => [...prev, errorMsg]);
       speakText('Sorry, there was an error processing your request.');
+    }
+  };
+
+  const cleanupRecording = () => {
+    setIsRecording(false);
+    if (speechRecognitionRef.current) {
+      try {
+        speechRecognitionRef.current.onend = null;
+        speechRecognitionRef.current.onerror = null;
+        speechRecognitionRef.current.stop();
+      } catch (e) {
+        // ignore
+      }
+      speechRecognitionRef.current = null;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (e) {
+        // ignore
+      }
+      mediaRecorderRef.current = null;
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      cleanupRecording();
+    };
+  }, []);
+
+  const toggleRecording = async () => {
+    if (isRecording) {
+      cleanupRecording();
+      return;
+    }
+
+    // 1. Check browser microphone support
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      const errorText = lang === 'en'
+        ? 'Microphone recording is not supported in this browser.'
+        : 'इस ब्राउज़र में माइक्रोफ़ोन समर्थित नहीं है।';
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `bot-err-${Date.now()}`,
+          sender: 'sakhi',
+          text: errorText,
+          hindiText: errorText,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+      return;
+    }
+
+    // 2. Check SpeechRecognition support
+    const SpeechRecognitionClass =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognitionClass) {
+      const errorText = lang === 'en'
+        ? 'Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.'
+        : 'इस ब्राउज़र में वाक् पहचान समर्थित नहीं है। कृपया Chrome या Edge का उपयोग करें।';
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `bot-err-${Date.now()}`,
+          sender: 'sakhi',
+          text: errorText,
+          hindiText: errorText,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+      return;
+    }
+
+    try {
+      // 3. Request microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+
+      // 4. Record actual microphone audio using MediaRecorder
+      audioChunksRef.current = [];
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      mediaRecorder.start();
+      mediaRecorderRef.current = mediaRecorder;
+
+      // 5. Speech-to-text conversion
+      const recognition = new SpeechRecognitionClass();
+      recognition.lang = lang === 'en' ? 'en-IN' : 'hi-IN';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      let recognizedTranscript = '';
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0]?.[0]?.transcript || '';
+        if (transcript.trim()) {
+          recognizedTranscript = transcript.trim();
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        cleanupRecording();
+        if (event.error === 'no-speech') {
+          const noSpeechMsg = lang === 'en'
+            ? 'No speech was detected. Please try speaking again.'
+            : 'कोई आवाज़ सुनाई नहीं दी। कृपया पुनः प्रयास करें।';
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `bot-err-${Date.now()}`,
+              sender: 'sakhi',
+              text: noSpeechMsg,
+              hindiText: noSpeechMsg,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            },
+          ]);
+        }
+      };
+
+      recognition.onend = () => {
+        cleanupRecording();
+        if (recognizedTranscript) {
+          handleUserQuery(recognizedTranscript);
+        }
+      };
+
+      speechRecognitionRef.current = recognition;
+      recognition.start();
+      setIsRecording(true);
+    } catch (err: any) {
+      cleanupRecording();
+      let errorMsg = lang === 'en'
+        ? 'Could not access the microphone. Please check permissions.'
+        : 'माइक्रोफ़ोन तक पहुँच नहीं हो सकी। कृपया अनुमति जाँचें।';
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        errorMsg = lang === 'en'
+          ? 'Microphone permission was denied. Please allow microphone access in your browser settings.'
+          : 'माइक्रोफ़ोन अनुमति अस्वीकार कर दी गई। कृपया ब्राउज़र सेटिंग्स में माइक्रोफ़ोन की अनुमति दें।';
+      }
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `bot-err-${Date.now()}`,
+          sender: 'sakhi',
+          text: errorMsg,
+          hindiText: errorMsg,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
     }
   };
 
@@ -374,10 +541,22 @@ export const SakhiChatWindow: React.FC<SakhiChatWindowProps> = ({
         </div>
       </div>
 
+      {/* Active Recording State Banner */}
+      {isRecording && (
+        <div className="flex items-center justify-center gap-2 py-1.5 px-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs animate-pulse">
+          <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+          <span className="font-semibold">
+            {lang === 'en' ? 'Sakhi is listening... Speak your question' : 'सखी सुन रही हैं... अपना प्रश्न बोलें'}
+          </span>
+        </div>
+      )}
+
       {/* Input Box */}
       <div
-        className={`p-1.5 rounded-2xl border flex items-center gap-2 ${
-          isTiranga
+        className={`p-1.5 rounded-2xl border flex items-center gap-2 transition-all ${
+          isRecording
+            ? 'border-red-500 ring-2 ring-red-500/20'
+            : isTiranga
             ? 'bg-white border-[#FF671F]/40 text-slate-900 shadow-sm'
             : isDark
             ? 'bg-[#0E1526] border-slate-800 text-slate-100'
@@ -385,22 +564,24 @@ export const SakhiChatWindow: React.FC<SakhiChatWindowProps> = ({
         }`}
       >
         <button
-          onClick={() => {
-            const prompt = lang === 'en'
-              ? 'I would like to apply for the pre-approved credit'
-              : 'मुझे पूर्व-स्वीकृत ऋण के लिए आवेदन करना है';
-            handleUserQuery(prompt);
-          }}
-          className={`w-9 h-9 rounded-xl transition-colors shrink-0 inline-flex items-center justify-center ${
-            isTiranga
+          onClick={toggleRecording}
+          type="button"
+          className={`w-9 h-9 rounded-xl transition-all shrink-0 inline-flex items-center justify-center ${
+            isRecording
+              ? 'bg-red-600 text-white animate-pulse shadow-md shadow-red-500/40 hover:bg-red-700'
+              : isTiranga
               ? 'bg-[#FF671F]/10 text-[#FF671F] hover:bg-[#FF671F]/20'
               : isDark
               ? 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30'
               : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
           }`}
-          title="Voice Assist"
+          title={
+            isRecording
+              ? (lang === 'en' ? 'Stop Listening' : 'सुनना बंद करें')
+              : (lang === 'en' ? 'Voice Assist (Speak now)' : 'आवाज़ से पूछें')
+          }
         >
-          <Mic className="w-4 h-4" />
+          {isRecording ? <Square className="w-3.5 h-3.5 fill-current" /> : <Mic className="w-4 h-4" />}
         </button>
 
         <input
@@ -410,7 +591,11 @@ export const SakhiChatWindow: React.FC<SakhiChatWindowProps> = ({
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleUserQuery(inputVal);
           }}
-          placeholder={t.voicePromptPlaceholder}
+          placeholder={
+            isRecording
+              ? (lang === 'en' ? 'Listening... Speak now...' : 'सुन रहे हैं... कृपया बोलें...')
+              : t.voicePromptPlaceholder
+          }
           className={`flex-1 h-9 bg-transparent text-xs outline-none px-1 ${
             isDark
               ? 'text-white placeholder:text-slate-500'

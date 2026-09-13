@@ -122,8 +122,8 @@ def generate_conversational_fallback(
     # =========================================================================
     message = ""
 
-    # 1. LOAN: SHOULD_I_TAKE_LOAN
-    if intent == "SHOULD_I_TAKE_LOAN":
+    # 1. LOAN: SHOULD_I_TAKE_LOAN / LOAN_AFFORDABILITY / LOAN_REPAYMENT
+    if intent in ("SHOULD_I_TAKE_LOAN", "LOAN_AFFORDABILITY", "LOAN_REPAYMENT"):
         if decision == "SUPPORT":
             if language == "HINDI":
                 message = (
@@ -187,6 +187,64 @@ def generate_conversational_fallback(
                 message = f"Aapka healthy surplus ({surplus_str}) hai, isliye credit lene ke bajay disciplined wealth building (SIP) suggest kiya gaya hai."
             else:
                 message = f"With a healthy surplus of {surplus_str}, we recommended disciplined wealth accumulation rather than taking unnecessary debt."
+
+    # 2b. LOAN: LOAN_COST_INQUIRY
+    elif intent == "LOAN_COST_INQUIRY":
+        if decision == "SUPPORT":
+            if language == "HINDI":
+                message = (
+                    f"मैं समझता हूँ कि आप ऋण लागत और ब्याज के बारे में पूछ रहे हैं। इस प्रोटोटाइप में, किसी निर्दिष्ट ऋण उत्पाद, ब्याज दर और पुनर्भुगतान अवधि के बिना सटीक ब्याज या ईएमआई की गणना नहीं की जा सकती। "
+                    f"इसके अलावा, NeoBharat अभी अतिरिक्त ऋण लेने की सलाह नहीं देता क्योंकि आपकी मासिक ईएमआई {emi_str} और वित्तीय तनाव को देखते हुए नकदी प्रवाह को सहारा देना हमारी प्राथमिकता है।"
+                )
+            elif language == "HINGLISH":
+                message = (
+                    f"Main samajhta hoon ki aap loan cost aur interest ke baare me pooch rahe hain. Current prototype me exact interest ya EMI amount bina assigned loan rate aur tenure ke calculate nahi kiya ja sakta. "
+                    f"Saath hi, elevated stress aur current EMI ({emi_str}) ko dekhte hue NeoBharat abhi naya loan lene ki advice nahi deta, balki cash flow ko support karna priority hai."
+                )
+            else:
+                message = (
+                    f"I understand you are asking about loan costs and interest. In this prototype, exact interest, EMI, or repayment amounts cannot be calculated authoritatively without an assigned loan product, interest rate, and tenure. "
+                    f"Furthermore, NeoBharat does not recommend taking an additional loan right now because your financial indicators show elevated stress (current EMI: {emi_str}). Our priority is supporting your cash flow rather than adding borrowing costs."
+                )
+        elif decision == "VERIFY":
+            if language == "HINDI":
+                message = (
+                    "मैं समझता हूँ कि आप ऋण लागत और ब्याज के बारे में पूछ रहे हैं। प्रोटोटाइप में वास्तविक ब्याज दर और अवधि के बिना सटीक ब्याज राशि की गणना नहीं की जा सकती। "
+                    "इसके अतिरिक्त, असामान्य गतिविधि की पुष्टि होने तक सभी ऋण प्रक्रियाएं निलंबित हैं।"
+                )
+            elif language == "HINGLISH":
+                message = (
+                    "Main samajhta hoon ki aap loan cost aur interest ke baare me pooch rahe hain. Prototype me exact interest ya EMI amount invent nahi kiya ja sakta. "
+                    "Saath hi, unusual transaction verify hone tak sabhi credit applications suspended hain."
+                )
+            else:
+                message = (
+                    "I understand you are asking about loan costs and interest. In this prototype, exact interest amounts cannot be calculated authoritatively without an assigned loan rate and tenure. "
+                    "Furthermore, all credit evaluations are suspended until recent unusual transaction activity is verified."
+                )
+        elif decision == "RECOMMEND":
+            if language == "HINDI":
+                message = (
+                    f"मैं समझता हूँ कि आप ऋण लागत और ब्याज के बारे में पूछ रहे हैं। इस प्रोटोटाइप में, किसी निर्दिष्ट ऋण उत्पाद, ब्याज दर और अवधि के बिना सटीक ब्याज या ईएमआई की गणना नहीं की जा सकती। "
+                    f"आपके स्वस्थ मासिक अधिशेष ({surplus_str}) के साथ, NeoBharat ऋण का बोझ उठाने के बजाय अनुशासित बचत की सलाह देता है।"
+                )
+            elif language == "HINGLISH":
+                message = (
+                    f"Main samajhta hoon ki aap loan cost aur interest ke baare me pooch rahe hain. Current prototype me bina assigned loan rate aur tenure ke exact interest ya EMI calculate nahi kiya ja sakta. "
+                    f"Aapke healthy surplus ({surplus_str}) ke sath, NeoBharat loan lene ke bajay disciplined savings recommend karta hai."
+                )
+            else:
+                message = (
+                    f"I understand you are asking about loan costs and interest. In this prototype, exact interest or EMI amounts cannot be calculated authoritatively without an assigned loan product, interest rate, and tenure. "
+                    f"With your healthy surplus of {surplus_str}, NeoBharat recommends disciplined savings or wealth accumulation rather than taking on loan debt and interest obligations."
+                )
+        else:
+            if language == "HINDI":
+                message = "मैं समझता हूँ कि आप ऋण लागत और ब्याज के बारे में पूछ रहे हैं। प्रोटोटाइप में वास्तविक ब्याज दर और अवधि के बिना सटीक ब्याज या ईएमआई की गणना नहीं की जा सकती।"
+            elif language == "HINGLISH":
+                message = "Main samajhta hoon ki aap loan cost aur interest ke baare me pooch rahe hain. Prototype me bina assigned loan rate aur tenure ke exact interest ya EMI amount calculate nahi kiya ja sakta."
+            else:
+                message = "I understand you are asking about loan costs and interest. In this prototype, exact interest, EMI, or repayment amounts cannot be calculated authoritatively without an assigned loan product, interest rate, and tenure. We do not invent interest numbers or rates."
 
     # 3. FINANCIAL HEALTH: WHAT_SHOULD_I_DO
     elif intent == "WHAT_SHOULD_I_DO":

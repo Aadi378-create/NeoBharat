@@ -27,6 +27,7 @@ INTENT_PRIORITY: List[str] = [
     "WHY_NO_LOAN",
     "LOAN_AFFORDABILITY",
     "LOAN_REPAYMENT",
+    "LOAN_COST_INQUIRY",
     "EMI_EXPLANATION",
     "PAYMENT_RISK",
     "UPCOMING_PAYMENTS",
@@ -56,6 +57,7 @@ STRATEGY_MAP: Dict[str, str] = {
     "WHY_NO_LOAN": "EXPLANATION",
     "LOAN_AFFORDABILITY": "EXPLANATION",
     "LOAN_REPAYMENT": "EXPLANATION",
+    "LOAN_COST_INQUIRY": "EXPLANATION",
     "EMI_EXPLANATION": "EXPLANATION",
     "PAYMENT_RISK": "EXPLANATION",
     "WHY_IS_SPENDING_HIGH": "EXPLANATION",
@@ -104,6 +106,10 @@ _DEVANAGARI_RE = re.compile(r"[\u0900-\u097F]")
 _WHY_FOLLOWUP = re.compile(r"^(\s*(why|kyu|kyun|kyon|क्यों|क्यों\s*रे|aisa\s*kyu)\s*[?\.!]*\s*)+$", re.IGNORECASE)
 _WHAT_NOW_FOLLOWUP = re.compile(r"^(\s*(what\s+now|and\s+now|phir|ab\s+kya|phir\s+kya|आगे\s*क्या|अब\s*क्या)\s*[?\.!]*\s*)+$", re.IGNORECASE)
 _MONTHLY_FOLLOWUP = re.compile(r"^(\s*(what\s+about\s+monthly|monthly|har\s+mahine|हर\s+महीने|monthly\s+kitna)\s*[?\.!]*\s*)+$", re.IGNORECASE)
+_COST_FOLLOWUP = re.compile(
+    r"^(\s*(exact\s+amount|exact\s+interest|exact\s+cost|exact\s+emi|exact\s+rate|what\s+would\s+i\s+pay|how\s+much\s+interest|what\s+is\s+the\s+interest|interest\s+rate|how\s+much\s+to\s+pay|how\s+much\s+will\s+it\s+cost|kitna\s+byaaj|byaaj\s+kitna|kitna\s+dena\s+hoga|kitna\s+bharna\s+padega|kitna\s+lagega|kitna\s+paisa\s+lagega|kitna\s+interest|interest\s+kitna|kitni\s+emi|सटीक\s*राशि|कितना\s*ब्याज|ब्याज\s*कितना|कितनी\s*ईएमआई)\s*[?\.!]*\s*)+$",
+    re.IGNORECASE,
+)
 
 
 def normalize_message(text: str) -> str:
@@ -196,6 +202,8 @@ def is_followup_message(normalized: str) -> Optional[str]:
         return "WHAT_NOW"
     if _MONTHLY_FOLLOWUP.match(normalized):
         return "MONTHLY"
+    if _COST_FOLLOWUP.match(normalized):
+        return "LOAN_COST"
     return None
 
 
@@ -304,6 +312,16 @@ def detect_intent(
                     "topic": "PAYMENTS",
                     "response_strategy": STRATEGY_MAP["EMI_EXPLANATION"],
                 }
+
+        if followup_type == "LOAN_COST":
+            return {
+                "intent": "LOAN_COST_INQUIRY",
+                "language": language,
+                "confidence": 0.95,
+                "matched_terms": [normalized, "context:" + str(last_topic or last_intent or "LOAN")],
+                "topic": "LOAN",
+                "response_strategy": STRATEGY_MAP["LOAN_COST_INQUIRY"],
+            }
 
     # 2. Score message against intent lexicon
     matched_intents: Dict[str, Tuple[float, List[str]]] = {}

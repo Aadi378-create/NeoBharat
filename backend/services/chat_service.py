@@ -136,69 +136,18 @@ def process_chat(
     reference_month: Optional[str] = None,
     openai_client: Optional[Any] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Process an incoming user chat message through the explanation pipeline.
+    """Process an incoming user chat message through the conversational state machine.
 
-    1. Retrieves conversational context and detects user intent/language.
-    2. Builds authoritative deterministic context from Phase 1-3 engines.
-    3. Calls OpenAI for conversational explanation with intent guidance.
-    4. Validates output schema and semantics.
-    5. Returns safe explanation or deterministic fallback, updating context.
-
-    Args:
-        customer_id: Customer ID.
-        user_message: Untrusted user conversational text.
-        reference_month: Optional reference month.
-        openai_client: Optional client instance (used for testing).
-
-    Returns:
-        Optional[Dict[str, Any]]: Validated Phase 4 output dictionary, or None if customer not found.
+    Orchestrates intent classification, authoritative context retrieval,
+    appointment flow routing, OpenAI explanation, Phase 4 validation, and
+    Firestore state persistence.
     """
-    # 1. Retrieve lightweight conversation context for customer
-    conv_ctx = get_conversation_context(customer_id)
+    from backend.services.conversation_graph import run_conversation_graph
 
-    # 2. Detect intent, language, and response strategy
-    intent_res = detect_intent(user_message, conversation_context=conv_ctx)
-
-    # 3. Build authoritative context from Phase 1-3 deterministic backend
-    input_payload = build_llm_input(customer_id, user_message, reference_month)
-    if not input_payload:
-        return None
-
-    # 4. Call OpenAI explanation layer with intent context
-    raw_response = generate_explanation(input_payload, client=openai_client, intent_obj=intent_res)
-
-    if raw_response is not None:
-        # Step 1: Validate output schema
-        schema_valid = validate_output_schema(raw_response)
-        if schema_valid:
-            # Step 2: Validate semantic safety against authoritative context
-            semantic_valid = validate_semantic_output(raw_response, input_payload)
-            if semantic_valid:
-                logger.info("OpenAI explanation passed all schema and semantic validations.")
-                update_conversation_context(
-                    customer_id=customer_id,
-                    intent=intent_res["intent"],
-                    language=intent_res["language"],
-                    response_type=raw_response.get("response_type", "SUPPORT_GUIDANCE"),
-                    decision=raw_response.get("decision_acknowledgement", {}).get("decision", "SUPPORT"),
-                    topic=intent_res.get("topic", "GENERAL"),
-                )
-                return raw_response
-            else:
-                logger.warning("OpenAI explanation failed semantic safety validation. Engaging fallback.")
-        else:
-            logger.warning("OpenAI explanation failed output schema validation. Engaging fallback.")
-    else:
-        logger.info("No response from OpenAI (unavailable, timeout, or error). Engaging fallback.")
-
-    # 5. In all failure cases, return the deterministic conversational fallback
-    fallback = generate_conversational_fallback(input_payload, intent_res)
-    update_conversation_context(
+    return run_conversation_graph(
         customer_id=customer_id,
-        intent=intent_res["intent"],
-        language=intent_res["language"],
-        response_type=fallback.get("response_type", "SUPPORT_GUIDANCE"),
-        decision=fallback.get("decision_acknowledgement", {}).get("decision", "SUPPORT"),
-        topic=intent_res.get("topic", "GENERAL"),
+        user_message=user_message,
+        reference_month=reference_month,
+        openai_client=openai_client,
     )
-    return fallback
+

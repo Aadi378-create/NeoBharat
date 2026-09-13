@@ -44,10 +44,21 @@ def clean_context():
 
 @pytest.fixture
 def test_client():
-    """Create Flask test client fixture."""
-    app = create_app({"TESTING": True})
-    with app.test_client() as client:
-        yield client
+    """Create Flask test client fixture with seeded data."""
+    import tempfile, os
+    db_fd, db_path = tempfile.mkstemp(suffix=".db")
+    os.close(db_fd)
+    try:
+        app = create_app({"TESTING": True, "DATABASE_PATH": db_path})
+        from backend.data.seed_data import seed_database
+        seed_database(db_path)
+        with app.test_client() as client:
+            yield client
+    finally:
+        try:
+            os.unlink(db_path)
+        except OSError:
+            pass
 
 
 class MockMessage:

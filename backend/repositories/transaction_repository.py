@@ -87,9 +87,11 @@ def insert_transaction(
             INSERT INTO transactions (customer_id, timestamp, amount, type, category, merchant, status)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """
+        from datetime import datetime, timezone
+        ts = transaction_data.get("timestamp") or datetime.now(timezone.utc).isoformat()
         params = (
             transaction_data["customer_id"],
-            transaction_data["timestamp"],
+            ts,
             float(transaction_data["amount"]),
             transaction_data["type"],
             transaction_data["category"],

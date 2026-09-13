@@ -38,6 +38,29 @@ def get_customer_by_id(customer_id: int, conn: Optional[sqlite3.Connection] = No
             connection.close()
 
 
+def get_customer_by_phone(phone: str, conn: Optional[sqlite3.Connection] = None, db_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Retrieve a single customer by phone number.
+
+    Args:
+        phone: The customer phone number.
+        conn: Optional existing sqlite3 connection.
+        db_path: Optional database path override.
+
+    Returns:
+        Optional[Dict[str, Any]]: Customer data as a dictionary, or None if not found.
+    """
+    owns_conn = conn is None
+    connection = conn or get_db_connection(db_path)
+    try:
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM customers WHERE phone = ?", (phone,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        if owns_conn:
+            connection.close()
+
+
 def get_all_customers(conn: Optional[sqlite3.Connection] = None) -> List[Dict[str, Any]]:
     """Retrieve all customers.
 
@@ -76,8 +99,8 @@ def insert_customer(customer_data: Dict[str, Any], conn: Optional[sqlite3.Connec
         # Support explicit ID if provided, otherwise let autoincrement handle it
         if "id" in customer_data and customer_data["id"] is not None:
             query = """
-                INSERT INTO customers (id, name, age, language, monthly_income, monthly_emi, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO customers (id, name, age, language, monthly_income, monthly_emi, phone, pin_hash, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
             params = (
                 customer_data["id"],
@@ -86,12 +109,14 @@ def insert_customer(customer_data: Dict[str, Any], conn: Optional[sqlite3.Connec
                 customer_data.get("language", "en"),
                 customer_data.get("monthly_income"),
                 customer_data.get("monthly_emi"),
+                customer_data.get("phone"),
+                customer_data.get("pin_hash"),
                 customer_data.get("created_at"),
             )
         else:
             query = """
-                INSERT INTO customers (name, age, language, monthly_income, monthly_emi, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO customers (name, age, language, monthly_income, monthly_emi, phone, pin_hash, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """
             params = (
                 customer_data["name"],
@@ -99,6 +124,8 @@ def insert_customer(customer_data: Dict[str, Any], conn: Optional[sqlite3.Connec
                 customer_data.get("language", "en"),
                 customer_data.get("monthly_income"),
                 customer_data.get("monthly_emi"),
+                customer_data.get("phone"),
+                customer_data.get("pin_hash"),
                 customer_data.get("created_at"),
             )
         cursor.execute(query, params)

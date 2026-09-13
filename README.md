@@ -1,8 +1,8 @@
 # NeoBharat (BharatPay AI)
 > *"Your bank that understands you, not just your transactions."*
 
-[![Backend Tests](https://img.shields.io/badge/Backend%20Tests-317%20passed-3DDC9D?style=flat-square)](#testing)
-[![Frontend Tests](https://img.shields.io/badge/Frontend%20Tests-12%20passed-3DDC9D?style=flat-square)](#testing)
+[![Backend Tests](https://img.shields.io/badge/Backend%20Tests-368%20passed-3DDC9D?style=flat-square)](#testing)
+[![Frontend Tests](https://img.shields.io/badge/Frontend%20Tests-16%20passed-3DDC9D?style=flat-square)](#testing)
 [![Build Status](https://img.shields.io/badge/Vite%20Build-Passing-3DDC9D?style=flat-square)](#testing)
 [![Hackathon](https://img.shields.io/badge/HackOut26-DAIICT-F79646?style=flat-square)](#overview)
 
@@ -12,7 +12,9 @@
 
 **NeoBharat** is a prototype AI-assisted banking platform designed to protect customers rather than exploit their vulnerabilities. Traditional digital lending systems frequently optimize for loan disbursement volume, pushing high-interest credit lines to users under acute financial stress.
 
-NeoBharat introduces a responsible alternative grounded in the principle: **"AI can choose NOT to sell."**
+NeoBharat introduces a responsible alternative grounded in the principle: **"Backend decides. AI explains."**
+
+> *"NeoBharat doesn't optimize for selling more products. It optimizes for making the right financial decision for the customer."*
 
 By combining deterministic financial and risk engines with a strictly governed conversational explanation layer, NeoBharat identifies when a customer needs budgeting support, when they have a genuine surplus for systematic investing, or when an unusual transaction warrants proactive verification.
 
@@ -27,45 +29,64 @@ By combining deterministic financial and risk engines with a strictly governed c
 
 ---
 
-## 3. Core Innovation: "AI Can Choose NOT to Sell"
+## 3. Core Innovation: "Backend Decides. AI Explains."
 
-NeoBharat decouples **decision-making** from **conversational explanation**:
+NeoBharat decouples **deterministic financial decision-making** from **conversational explanation**:
 
 ```
-+--------------------------------------------------------+
-|                   DETERMINISTIC LAYER                  |
-|  * Transaction Analysis (Income, Spending, EMI)        |
-|  * Financial Guardian (Stress, Risk, Fraud Scores)     |
-|  * Recommendation Engine (Debt Capacity, Safety Gates) |
-+---------------------------+----------------------------+
-                            | Strict JSON Context
-                            v
-+--------------------------------------------------------+
-|              SAFETY VALIDATION GATE (PHASE 4)          |
-|  * JSON Schema Enforcement                             |
-|  * Semantic Safety Rules (No hallucinated approvals,   |
-|    no credit pitches when blocked, no confirmed fraud) |
-+---------------------------+----------------------------+
-                            | Validated Context
-                            v
-+--------------------------------------------------------+
-|                 OPENAI EXPLANATION LAYER               |
-|  * Clear, empathetic explanations                      |
-|  * Non-crashing graceful fallback if API unavailable   |
-+---------------------------+----------------------------+
-                            | Validated JSON
-                            v
-+--------------------------------------------------------+
-|                FRONTEND DASHBOARD (PHASE 6)            |
-|  * Presentation-only display (Zero client calculations)|
-|  * Clear visual distinction of SUPPORT vs RECOMMEND    |
-+--------------------------------------------------------+
++-------------------------------------------------------------+
+|               SQLITE DETERMINISTIC FINANCIAL CORE           |
+|  * Verified Transaction Analysis (Income, Spending, EMI)     |
+|  * 4-Score Financial Guardian (Stress, Risk, Fraud, Change) |
+|  * Deterministic Decision Engine (Debt Capacity, Guardrails)|
++------------------------------+------------------------------+
+                               | Authoritative Context
+                               v
++-------------------------------------------------------------+
+|              LANGGRAPH CONVERSATION ORCHESTRATOR            |
+|  * Multi-Turn State Machine (Intent, Language, Strategy)    |
+|  * Context-Aware Appointment Routing & Booking Management   |
+|  * Multi-Lingual Classification (English, Hindi, Hinglish)  |
++------------------------------+------------------------------+
+                               | Filtered Payload
+                               v
++-------------------------------------------------------------+
+|              GROQ HIGH-SPEED EXPLANATION LAYER              |
+|  * Model: openai/gpt-oss-120b (via Groq OpenAI-compat API)  |
+|  * EXPLANATION_ONLY role (Zero authority to alter decisions)|
+|  * Non-crashing graceful fallback when offline/unconfigured |
++------------------------------+------------------------------+
+                               | Structured JSON
+                               v
++-------------------------------------------------------------+
+|               SAFETY VALIDATION GATE (PHASE 4)              |
+|  * JSON Schema Draft 2020-12 Contract Verification          |
+|  * Semantic Rules: Blocks credit pitches, prohibits claiming|
+|    confirmed fraud, forbids unauthorized authority claims   |
++------------------------------+------------------------------+
+                               | Verified Safe Output
+                               v
++-------------------------------------------------------------+
+|              FIRESTORE CLOUD APPLICATION STATE              |
+|  * Multi-turn dialog history & appointment records          |
+|  * Zero financial calculations (MockFirestore fallback)     |
++------------------------------+------------------------------+
+                               | JSON over REST API
+                               v
++-------------------------------------------------------------+
+|                 MODERN REACT + VITE DASHBOARD               |
+|  * Presentation-only UI with zero client calculations       |
+|  * Persona Switcher (Rahul, Priya, Arjun)                   |
+|  * Integrated SAKHI AI Assistant & Appointment Modal        |
++-------------------------------------------------------------+
 ```
 
-- **Deterministic Financial Engine Decides:** All risk scoring, affordability calculations, and recommendation decisions are computed by deterministic Python engines using verified transaction data.
-- **Safety Gate Validates:** A formal validator ensures zero hallucination, strict schema conformance, and alignment with protective principles before any explanation reaches the user.
-- **OpenAI Explains:** Large Language Models are restricted to an `EXPLANATION_ONLY` role. They have no authority to approve loans, alter scores, or pitch commercial credit.
-- **Frontend Displays:** A React + Vite interface renders backend outputs with zero client-side financial calculations and zero exposed credentials.
+- **SQLite = Financial Truth:** All risk scoring, affordability calculations, and recommendation decisions are computed by deterministic Python engines using verified transaction data.
+- **Firestore = Application State:** Multi-turn conversational memory, appointment records, and session history are persisted in Firestore (with seamless local thread-safe `MockFirestoreClient` fallback when credentials are not configured).
+- **LangGraph = Conversation Orchestration:** Directs dialog flow, classifies intents, manages appointment booking logic, and ensures customer context isolation.
+- **Groq = Fast Explanation Layer:** Provides ultra-fast explanations using `openai/gpt-oss-120b` strictly in an `EXPLANATION_ONLY` capacity.
+- **Safety Gate = Formal Enforcement:** Validates schema and semantic safety before any output is returned to the citizen.
+- **Frontend = Presentation:** Modern React + Vite UI with full accessibility, bilingual support, and zero hardcoded credentials.
 
 ---
 
@@ -267,20 +288,24 @@ NeoBharat/
    ```
    *Output: `Successfully seeded 3 customers and 44 transactions.`*
 
-4. **(Optional) Configure OpenAI API Key:**
-   To enable dynamic LLM explanations, set your API key in the environment:
+4. **(Optional) Configure Groq LLM Provider:**
+   To enable live dynamic LLM explanations powered by Groq:
    ```powershell
    # Windows (PowerShell)
-   $env:OPENAI_API_KEY="your-openai-api-key"
+   $env:LLM_PROVIDER="groq"
+   $env:GROQ_API_KEY="gsk_your_groq_api_key_here"
+   $env:GROQ_MODEL="openai/gpt-oss-120b"
 
    # Linux / macOS
-   export OPENAI_API_KEY="your-openai-api-key"
+   export LLM_PROVIDER="groq"
+   export GROQ_API_KEY="gsk_your_groq_api_key_here"
+   export GROQ_MODEL="openai/gpt-oss-120b"
    ```
-   > **Note:** An API key is **not required** to run or test the system. When unset, NeoBharat gracefully activates its verified deterministic fallback engine with zero crashes.
+   > **Deterministic Fallback:** An external API key is **not required** to run or test the system. When unset, NeoBharat activates its verified deterministic fallback engine with zero crashes.
 
 5. **Start Flask Backend Server:**
    ```bash
-   python backend/app.py
+   .venv\Scripts\python.exe -m flask --app backend.app run --host 127.0.0.1 --port 5000
    ```
    *Backend starts at `http://127.0.0.1:5000` with health check at `/health`.*
 
@@ -302,42 +327,57 @@ NeoBharat/
    ```bash
    npm run dev
    ```
-   *Frontend starts at `http://localhost:3000` (automatically proxying `/api` calls to the Flask backend).*
+   *Frontend starts at `http://localhost:5173` (automatically proxying `/api/*` calls to the Flask backend on port 5000).*
 
 4. **Build for Production:**
    ```bash
    npm run build
    ```
-   *Generates optimized production bundle in `frontend/dist`.*
+   *Generates optimized production bundle in `frontend/dist` in < 1 second.*
 
 ---
 
-## 13. Testing
+## 13. Testing & Verification
 
 ### Run All Backend Tests (Pytest)
 ```bash
 .venv\Scripts\python.exe -m pytest -q
 ```
-**Expected Result:** `230 passed` across all 14 test suites in < 1 second.
+**Verified Result:** `368 passed in < 2 seconds` across 17 test suites covering deterministic metrics, guardian scoring, decision rules, Phase 4 schemas, LangGraph state machine, Groq provider resolution, and MockFirestore persistence.
 
 ### Run All Frontend Tests (Vitest)
 ```bash
 cd frontend
-npm run test
+npm test -- --run
 ```
-**Expected Result:** `12 passed` across all client contract and persona tests in < 1.5 seconds.
+**Verified Result:** `16 passed` covering customer persona transitions, guardian card calculations, and safety rules.
 
 ### Run Production Build Verification
 ```bash
 cd frontend
 npm run build
 ```
-**Expected Result:** `build in ~900ms` with zero bundle errors or warnings.
+**Verified Result:** Built in < 1s with zero errors.
 
 ---
 
-## 14. Regulatory & Prototype Disclaimers
+## 14. 10-Minute Live Demo Walkthrough
 
-- **Illustrative Prototype Only:** NeoBharat is an academic and hackathon prototype submitted for **HackOut'26 at DAIICT**.
+| Time | Stage | Action & Talking Points |
+| :--- | :--- | :--- |
+| **0:00–1:00** | **Problem Statement** | "Traditional banking apps ask: *What can we sell you?* NeoBharat asks: *What does this customer actually need right now?*" Introduce the decoupled architecture: **Backend decides. AI explains.** |
+| **1:00–2:30** | **Rahul (Financial Stress)** | Select Rahul. Income ₹45k, spending ₹38k, EMI ₹14k, surplus ₹7k. Guardian triggers `ATTENTION_NEEDED` (Stress 72, Payment Risk 61). Decision is strictly **SUPPORT**; predatory credit is completely suppressed. |
+| **2:30–4:00** | **SAKHI Conversational AI** | Open SAKHI. Ask *"Why didn't you recommend a loan?"* → SAKHI explains cashflow metrics. Ask in Hinglish: *"loan kyu nahi recommend kiya?"* → SAKHI responds naturally in Hinglish grounded in authoritative context. |
+| **4:00–5:00** | **Appointment Booking** | Click *"Book Debt & Budgeting Advisor (30 mins)"* or ask SAKHI *"I want to talk to an advisor"*. Select date/time slot. Confirm booking. Persisted cleanly in application state without altering financial truth. |
+| **5:00–6:30** | **Priya (Disciplined Wealth)** | Switch to Priya. Income ₹65k, spending ₹21k, zero debt, surplus ₹44k. Decision is **RECOMMEND** for Systematic Wealth Builder SIP. Zero aggressive appointment pushing. |
+| **6:30–8:00** | **Arjun (Suspicious Anomaly)** | Switch to Arjun. Flagged ₹85,000 transaction at Luxury Watch Boutique (02:15 AM). Decision is **VERIFY**. Safety rule strictly enforced: *Never claim confirmed fraud until citizen verifies*. SAKHI guides security audit. |
+| **8:00–9:00** | **Architecture Pitch** | **SQLite** = Financial Truth; **Firestore** = Application State; **LangGraph** = Orchestration; **Groq** = High-speed Explanation Layer. |
+| **9:00–10:00** | **Responsible AI & Closing** | Emphasize safety gates, dark pattern prevention, and consumer welfare: *"NeoBharat doesn't optimize for selling more products. It optimizes for making the right financial decision for the customer."* |
+
+---
+
+## 15. Regulatory & Prototype Disclaimers
+
+- **Illustrative Prototype Only:** NeoBharat is an academic and hackathon prototype built for **HackOut'26 at DAIICT**.
 - **No Regulatory Endorsement:** Mentions of "RBI-aligned principles" refer to design heuristics inspired by public consumer protection guidelines; NeoBharat is not licensed or endorsed by the Reserve Bank of India.
 - **No Real Financial Transactions:** Products such as the "Systematic Wealth Builder SIP" are illustrative prototype concepts and do not constitute investment advice or actual financial offerings.

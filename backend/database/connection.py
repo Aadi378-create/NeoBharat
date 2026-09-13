@@ -27,6 +27,14 @@ def get_db_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
     Returns:
         sqlite3.Connection: Configured connection with Row factory and foreign keys enabled.
     """
+    if db_path is None:
+        try:
+            from flask import current_app, has_app_context
+            if has_app_context() and current_app.config.get("DATABASE_PATH"):
+                db_path = current_app.config.get("DATABASE_PATH")
+        except Exception:
+            pass
+
     path = db_path or DATABASE_PATH
     # Ensure directory exists
     Path(path).parent.mkdir(parents=True, exist_ok=True)

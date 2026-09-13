@@ -11,14 +11,25 @@ Verifies:
 
 import pytest
 from backend.app import create_app
+from backend.data.seed_data import seed_database
 
 
 @pytest.fixture
 def test_client():
-    """Create a test client using the application factory."""
-    app = create_app({"TESTING": True})
-    with app.test_client() as client:
-        yield client
+    """Create a test client using the application factory with seeded data."""
+    import tempfile, os
+    db_fd, db_path = tempfile.mkstemp(suffix=".db")
+    os.close(db_fd)
+    try:
+        app = create_app({"TESTING": True, "DATABASE_PATH": db_path})
+        seed_database(db_path)
+        with app.test_client() as client:
+            yield client
+    finally:
+        try:
+            os.unlink(db_path)
+        except OSError:
+            pass
 
 
 # =========================================================================

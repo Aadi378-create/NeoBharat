@@ -6,13 +6,22 @@ Client-supplied financial metrics, scores, or decisions are strictly ignored.
 """
 
 import logging
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, session
 
 from backend.services.chat_service import process_chat
 
 logger = logging.getLogger(__name__)
 
 chat_bp = Blueprint("chat_bp", __name__, url_prefix="/api")
+
+def check_auth(customer_id: int):
+    auth_id = session.get("customer_id")
+    if not auth_id:
+        return jsonify({"error": "Unauthorized"}), 401
+    if auth_id != customer_id:
+        return jsonify({"error": "Forbidden"}), 403
+    return None
+
 
 
 @chat_bp.route("/chat", methods=["POST"])
@@ -40,6 +49,9 @@ def chat():
     customer_id = data.get("customer_id")
     if customer_id is None or not isinstance(customer_id, int) or isinstance(customer_id, bool):
         return jsonify({"error": "Field 'customer_id' is required and must be an integer"}), 400
+
+    auth_err = check_auth(customer_id)
+    if auth_err: return auth_err
 
     user_message = data.get("message")
     if user_message is None or not isinstance(user_message, str) or not user_message.strip():

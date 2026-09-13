@@ -119,6 +119,58 @@ def valid_rahul_output(**overrides) -> Dict[str, Any]:
     return build_output(**overrides)
 
 
+from flask.testing import FlaskClient
+
+original_open = FlaskClient.open
+def auth_open(self, *args, **kwargs):
+    # Determine customer_id from path or json
+    path = args[0] if args else kwargs.get('path', '')
+    customer_id = None
+    import re
+    m = re.search(r'/api/customers/(\d+)', path)
+    if m:
+        customer_id = int(m.group(1))
+    elif 'json' in kwargs and isinstance(kwargs['json'], dict) and 'customer_id' in kwargs['json']:
+        customer_id = int(kwargs['json']['customer_id'])
+    
+    if not getattr(self, "disable_auto_auth", False) and self.environ_base.get("HTTP_X_REAL_AUTH") != "1" and customer_id is not None:
+        with self.session_transaction() as sess:
+            if 'customer_id' not in sess:
+                sess['customer_id'] = customer_id
+                
+    return original_open(self, *args, **kwargs)
+
+FlaskClient.open = auth_open
+
+
+import os
+
+@pytest.fixture(autouse=True, scope="session")
+def force_firebase_mock_mode():
+    """Force all tests to use the mock Firestore client, not real Firebase."""
+    original = os.environ.get("FIREBASE_USE_MOCK")
+    os.environ["FIREBASE_USE_MOCK"] = "true"
+    # Reset any cached real Firestore client
+    import backend.integrations.firebase_client as fb
+    fb._firestore_client = None
+    fb._firebase_app = None
+    yield
+    # Restore
+    if original is None:
+        os.environ.pop("FIREBASE_USE_MOCK", None)
+    else:
+        os.environ["FIREBASE_USE_MOCK"] = original
+
+
+@pytest.fixture(autouse=True)
+def reset_firestore_between_tests():
+    """Reset mock Firestore state between tests to prevent cross-test contamination."""
+    from backend.integrations.firebase_client import reset_mock_firestore
+    reset_mock_firestore()
+    yield
+    reset_mock_firestore()
+
+
 @pytest.fixture
 def rahul() -> Dict[str, Any]:
     """Authoritative Phase 4 context for Rahul (Customer 1)."""

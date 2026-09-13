@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS customers (
     language TEXT DEFAULT 'en',
     monthly_income REAL,
     monthly_emi REAL,
+    phone TEXT UNIQUE,
+    pin_hash TEXT,
     created_at TEXT
 );
 

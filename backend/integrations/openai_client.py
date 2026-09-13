@@ -54,19 +54,74 @@ Your output must be a valid JSON object strictly conforming to the following str
 }
 """
 
-DEFAULT_MODEL = "gpt-4o-mini"
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
+DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
+GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 DEFAULT_TIMEOUT_SECONDS = 15.0
 
 
+def get_llm_provider() -> str:
+    """Determine the active LLM provider ('groq' or 'openai').
+
+    Priority:
+    1. Explicit LLM_PROVIDER environment variable ('groq' or 'openai').
+    2. Auto-detection: if GROQ_API_KEY is present -> 'groq'.
+    3. Auto-detection: if OPENAI_API_KEY is present -> 'openai'.
+    4. Default: 'groq'.
+    """
+    explicit = os.environ.get("LLM_PROVIDER", "").strip().lower()
+    if explicit in ("groq", "openai"):
+        return explicit
+    if os.environ.get("GROQ_API_KEY", "").strip():
+        return "groq"
+    if os.environ.get("OPENAI_API_KEY", "").strip():
+        return "openai"
+    return "groq"
+
+
+def is_llm_available() -> bool:
+    """Check whether the active LLM provider has an API key configured."""
+    provider = get_llm_provider()
+    if provider == "groq":
+        return bool(os.environ.get("GROQ_API_KEY", "").strip())
+    return bool(os.environ.get("OPENAI_API_KEY", "").strip())
+
+
 def is_openai_available() -> bool:
-    """Check whether an OpenAI API key is configured in the environment."""
-    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
-    return bool(api_key)
+    """Backward-compatible alias for existing tests and consumers."""
+    provider = get_llm_provider()
+    if provider == "openai":
+        return bool(os.environ.get("OPENAI_API_KEY", "").strip())
+    return is_llm_available()
 
 
 def get_configured_model() -> str:
-    """Retrieve configured OpenAI model from environment or fallback to default."""
-    return os.environ.get("OPENAI_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
+    """Retrieve configured model for the active provider."""
+    provider = get_llm_provider()
+    if provider == "groq":
+        return os.environ.get("GROQ_MODEL", DEFAULT_GROQ_MODEL).strip() or DEFAULT_GROQ_MODEL
+    return os.environ.get("OPENAI_MODEL", DEFAULT_OPENAI_MODEL).strip() or DEFAULT_OPENAI_MODEL
+
+
+def get_llm_client() -> Optional[Any]:
+    """Initialize and return the OpenAI-compatible client for the active provider."""
+    provider = get_llm_provider()
+    if not is_llm_available():
+        logger.warning(f"{provider.upper()} API key not set in environment. Skipping LLM generation.")
+        return None
+
+    try:
+        from openai import OpenAI
+        if provider == "groq":
+            api_key = os.environ.get("GROQ_API_KEY", "").strip()
+            base_url = os.environ.get("GROQ_BASE_URL", GROQ_BASE_URL).strip()
+            return OpenAI(api_key=api_key, base_url=base_url)
+        else:
+            api_key = os.environ.get("OPENAI_API_KEY", "").strip()
+            return OpenAI(api_key=api_key)
+    except Exception as e:
+        logger.error(f"Failed to initialize {provider.upper()} client: %s", type(e).__name__)
+        return None
 
 
 def generate_explanation(
@@ -75,11 +130,11 @@ def generate_explanation(
     timeout: float = DEFAULT_TIMEOUT_SECONDS,
     intent_obj: Optional[Dict[str, Any]] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Invoke the OpenAI API to generate an explanation for a pre-computed financial decision.
+    """Invoke the active LLM API (Groq primary, OpenAI fallback) to explain a pre-computed decision.
 
     Args:
         payload: Full Phase 4 LLM input payload.
-        client: Optional pre-configured OpenAI client (useful for unit testing / mocking).
+        client: Optional pre-configured client (useful for unit testing / mocking).
         timeout: Request timeout in seconds.
         intent_obj: Optional Phase 7 intent detection result dictionary.
 
@@ -87,15 +142,11 @@ def generate_explanation(
         Optional[Dict[str, Any]]: Parsed JSON dictionary from the model response,
         or None if the API call fails, times out, or credentials are not configured.
     """
+    provider = get_llm_provider()
+
     if client is None:
-        if not is_openai_available():
-            logger.warning("OpenAI API key not set in environment. Skipping LLM generation.")
-            return None
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-        except Exception as e:
-            logger.error("Failed to initialize OpenAI client: %s", type(e).__name__)
+        client = get_llm_client()
+        if client is None:
             return None
 
     model = get_configured_model()
@@ -137,17 +188,17 @@ def generate_explanation(
         choice = response.choices[0]
         content = choice.message.content
         if not content:
-            logger.warning("OpenAI returned an empty content string.")
+            logger.warning("%s returned an empty content string.", provider.upper())
             return None
 
         parsed = json.loads(content)
         if not isinstance(parsed, dict):
-            logger.warning("Parsed OpenAI response is not a JSON dictionary.")
+            logger.warning("Parsed %s response is not a JSON dictionary.", provider.upper())
             return None
 
         return parsed
 
     except Exception as e:
         # Catch network errors, timeouts, rate limits, json decoding errors, etc.
-        logger.error("Error communicating with OpenAI API: %s: %s", type(e).__name__, str(e))
+        logger.error("Error communicating with %s API: %s: %s", provider.upper(), type(e).__name__, str(e))
         return None

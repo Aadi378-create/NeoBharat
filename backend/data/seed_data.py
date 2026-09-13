@@ -29,6 +29,8 @@ except ImportError:
     from repositories.transaction_repository import insert_transaction
 
 
+from werkzeug.security import generate_password_hash
+
 CUSTOMERS: List[Dict[str, Any]] = [
     {
         "id": 1,
@@ -37,6 +39,8 @@ CUSTOMERS: List[Dict[str, Any]] = [
         "language": "en",
         "monthly_income": 45000.0,
         "monthly_emi": 14000.0,
+        "phone": "9876543210",
+        "pin_hash": generate_password_hash("123456"),
         "created_at": "2026-07-01T00:00:00",
     },
     {
@@ -46,6 +50,8 @@ CUSTOMERS: List[Dict[str, Any]] = [
         "language": "en",
         "monthly_income": 65000.0,
         "monthly_emi": 0.0,
+        "phone": "8765432109",
+        "pin_hash": generate_password_hash("123456"),
         "created_at": "2026-06-15T00:00:00",
     },
     {
@@ -55,6 +61,8 @@ CUSTOMERS: List[Dict[str, Any]] = [
         "language": "en",
         "monthly_income": 50000.0,
         "monthly_emi": 8000.0,
+        "phone": "7654321098",
+        "pin_hash": generate_password_hash("123456"),
         "created_at": "2026-07-10T00:00:00",
     },
 ]
